@@ -5,12 +5,9 @@ import 'dotenv/config'
 const app = express();
 const port =process.env.port|| 5000;
 // middleware
-
-app.use(express.json());
 app.use(cors());
-
+app.use(express.json());
 // mongoDb connect
-
 const uri = process.env.MONGO_DB_URL;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -20,11 +17,10 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-async function run() {
-
-  // Get database and collection
+ // Get database and collection
   const database = client.db("social_event_db");
   const socialEventCollection=database.collection("socialEvents")
+async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
@@ -35,12 +31,18 @@ async function run() {
     console.log("Pinged your deployment.You are not successfully connected to MongoDb")
   }
 }
-run()
+await run()
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
+// createData post
 
+app.post("/create-event", async(req, res) => {
+  const data = req.body;
+  const result = await socialEventCollection.insertOne(data)
+  res.send(result)
+})
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
