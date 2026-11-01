@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from "cors";
-import { MongoClient, ServerApiVersion } from 'mongodb';
+import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb';
 import 'dotenv/config'
 const app = express();
 const port =process.env.port|| 5000;
@@ -36,6 +36,7 @@ await run()
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
+
 // createData post
 
 app.post("/create-event", async(req, res) => {
@@ -43,6 +44,20 @@ app.post("/create-event", async(req, res) => {
   const result = await socialEventCollection.insertOne(data)
   res.send(result)
 })
+// upcomingEvent Data get
+app.get("/upcoming-events", async(req, res) => {
+  const cursor = socialEventCollection.find();
+  const allData = await cursor.toArray();
+  res.send(allData)
+})
+// upcomingDetailsData
+app.get("/upcoming-event/:id",async (req, res) => {
+  const { id } = req.params;
+  const query = { _id: new ObjectId(id) };
+  const result = await socialEventCollection.findOne(query);
+  res.send(result)
+})
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
