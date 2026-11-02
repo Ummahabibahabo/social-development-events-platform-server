@@ -19,7 +19,9 @@ const client = new MongoClient(uri, {
 });
  // Get database and collection
   const database = client.db("social_event_db");
-  const socialEventCollection=database.collection("socialEvents")
+const socialEventCollection = database.collection("socialEvents")
+// Join  collection
+  const socialJoinEventCollection=database.collection("joinEvents")
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -57,6 +59,14 @@ app.get("/upcoming-event/:id",async (req, res) => {
   const result = await socialEventCollection.findOne(query);
   res.send(result)
 })
+// post joinEvent
+app.post("/join-event", async(req, res) => {
+  const data = req.body;
+  const result = await socialJoinEventCollection.insertOne(data)
+  res. send(result)
+})
+// Get joinEvent
+
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
