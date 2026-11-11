@@ -1,9 +1,9 @@
-import express from 'express';
+import express from "express";
 import cors from "cors";
-import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb';
-import 'dotenv/config'
+import { MongoClient, ObjectId, ServerApiVersion } from "mongodb";
+import "dotenv/config";
 const app = express();
-const port =process.env.port|| 5000;
+const port = process.env.port || 5000;
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -15,58 +15,100 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
- // Get database and collection
-  const database = client.db("social_event_db");
-const socialEventCollection = database.collection("socialEvents")
+// Get database and collection
+const database = client.db("social_event_db");
+const socialEventCollection = database.collection("socialEvents");
 // Join  collection
-  const socialJoinEventCollection=database.collection("joinEvents")
+const socialJoinEventCollection = database.collection("joinEvents");
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } catch(erroe){
-    console.log("Pinged your deployment.You are not successfully connected to MongoDb")
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!",
+    );
+  } catch (erroe) {
+    console.log(
+      "Pinged your deployment.You are not successfully connected to MongoDb",
+    );
   }
 }
-await run()
+await run();
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+app.get("/", (req, res) => {
+  res.send("Hello World!");
 });
 
 // createData post
 
-app.post("/create-event", async(req, res) => {
+app.post("/create-event", async (req, res) => {
   const data = req.body;
-  const result = await socialEventCollection.insertOne(data)
-  res.send(result)
-})
+  const result = await socialEventCollection.insertOne(data);
+  res.send(result);
+});
 // upcomingEvent Data get
-app.get("/upcoming-events", async(req, res) => {
+app.get("/upcoming-events", async (req, res) => {
   const cursor = socialEventCollection.find();
   const allData = await cursor.toArray();
-  res.send(allData)
-})
+  res.send(allData);
+});
 // upcomingDetailsData
-app.get("/upcoming-event/:id",async (req, res) => {
+app.get("/upcoming-event/:id", async (req, res) => {
   const { id } = req.params;
   const query = { _id: new ObjectId(id) };
   const result = await socialEventCollection.findOne(query);
-  res.send(result)
-})
-// post joinEvent
-app.post("/join-event", async(req, res) => {
-  const data = req.body;
-  const result = await socialJoinEventCollection.insertOne(data)
-  res. send(result)
-})
+  res.send(result);
+});
+
 // Get joinEvent
 
+app.get("/join-events", async (req, res) => {
+  const cursor = socialJoinEventCollection.find();
+  const result = await cursor.toArray();
+  res.send(result);
+});
+
+// post joinEvent
+app.post("/join-event", async (req, res) => {
+  const { data } = req.body;
+
+  const alreadyJoined = await socialJoinEventCollection.findOne({
+    "data.email": data.email,
+    "data.eventId": data.eventId,
+  });
+
+  if (alreadyJoined) {
+    return res.status(409).send({
+      message: "You have already joined this event!",
+    });
+  }
+
+  const result = await socialJoinEventCollection.insertOne({ data });
+
+  res.send(result);
+});
+// get email join event
+
+app.get("/join-event/:email", async (req, res) => {
+  const { email } = req.params;
+  const result = await socialJoinEventCollection
+    .find({ "data.email": email })
+    .sort({ "data.createEventData.date": 1 })
+    .toArray();
+  res.send(result);
+});
+
+// my-join-delete-events
+app.delete("/my-join-event/:id", async (req, res) => {
+  const { id } = req.params;
+  const query = { _id: new ObjectId(id) };
+  const result = await socialJoinEventCollection.deleteOne(query);
+  res.send(result);
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
