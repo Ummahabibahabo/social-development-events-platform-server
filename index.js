@@ -63,7 +63,22 @@ app.get("/upcoming-event/:id", async (req, res) => {
   const result = await socialEventCollection.findOne(query);
   res.send(result);
 });
+// UpcomingEvent By email
+app.get("/upcoming-event-by-email/:email", async (req, res) => {
+  const { email } = req.params;
+  const result = await socialEventCollection
+    .find({ "createEventData.email": email })
+    .toArray();
+  res.send(result);
+});
+// UpcomingEvent-delete-by id
 
+app.delete("/upcoming-event-by-delete/:id", async (req, res) => {
+  const { id } = req.params;
+  const query = { _id: new ObjectId(id) };
+  const result = await socialEventCollection.deleteOne(query);
+  res.send(result);
+});
 // Get joinEvent
 
 app.get("/join-events", async (req, res) => {
