@@ -56,6 +56,10 @@ app.get("/upcoming-events", async (req, res) => {
   const allData = await cursor.toArray();
   res.send(allData);
 });
+
+
+
+
 // upcomingDetailsData
 app.get("/upcoming-event/:id", async (req, res) => {
   const { id } = req.params;
@@ -79,6 +83,15 @@ app.delete("/upcoming-event-by-delete/:id", async (req, res) => {
   const result = await socialEventCollection.deleteOne(query);
   res.send(result);
 });
+// update UpComing Data
+app.patch("/upcoming-update/:id", async (req, res) => {
+  const { id } = req.params;
+  const data = req.body;
+  const query = { _id: new ObjectId(id) };
+  const result = await socialEventCollection.updateOne(query, { $set: data });
+  res.send(result);
+});
+
 // Get joinEvent
 
 app.get("/join-events", async (req, res) => {
@@ -128,3 +141,21 @@ app.delete("/my-join-event/:id", async (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
