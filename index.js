@@ -58,7 +58,15 @@ app.get("/upcoming-events", async (req, res) => {
 });
 
 
-
+//  recent upcoming events based on date
+app.get("/recent-events", async (req, res) => {
+  const cursor = socialEventCollection
+    .find()
+    .sort({ "createEventData.date": 1 })
+    .limit(6);
+  const result = await cursor.toArray();
+  res.send(result);
+});
 
 // upcomingDetailsData
 app.get("/upcoming-event/:id", async (req, res) => {
