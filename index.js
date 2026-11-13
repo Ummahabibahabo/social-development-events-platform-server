@@ -40,7 +40,7 @@ async function run() {
     );
   }
 }
-run();
+await run();
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -196,4 +196,3 @@ app.patch("/update-profile/:email", verifyToken, async (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
-export default app;
