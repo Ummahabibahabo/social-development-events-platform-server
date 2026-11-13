@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { MongoClient, ObjectId, ServerApiVersion } from "mongodb";
 import "dotenv/config";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 const app = express();
 const port = process.env.port || 5000;
 // middleware
@@ -22,6 +23,8 @@ const database = client.db("social_event_db");
 const socialEventCollection = database.collection("socialEvents");
 // Join  collection
 const socialJoinEventCollection = database.collection("joinEvents");
+// User collection
+const userCollection = database.collection("user");
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -37,15 +40,42 @@ async function run() {
     );
   }
 }
-await run();
+run();
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).send({
+      message: "Unauthorized",
+    });
+  }
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({
+      message: "Token missing",
+    });
+  }
+  const JWKS = createRemoteJWKSet(
+    new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+  );
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  } catch (error) {
+    return res.status(401).send({
+      message: "Invalid token",
+    });
+  }
+};
 // createData post
 
-app.post("/create-event", async (req, res) => {
+app.post("/create-event", verifyToken, async (req, res) => {
   const data = req.body;
   const result = await socialEventCollection.insertOne(data);
   res.send(result);
@@ -56,7 +86,6 @@ app.get("/upcoming-events", async (req, res) => {
   const allData = await cursor.toArray();
   res.send(allData);
 });
-
 
 //  recent upcoming events based on date
 app.get("/recent-events", async (req, res) => {
@@ -76,7 +105,7 @@ app.get("/upcoming-event/:id", async (req, res) => {
   res.send(result);
 });
 // UpcomingEvent By email
-app.get("/upcoming-event-by-email/:email", async (req, res) => {
+app.get("/upcoming-event-by-email/:email", verifyToken, async (req, res) => {
   const { email } = req.params;
   const result = await socialEventCollection
     .find({ "createEventData.email": email })
@@ -85,14 +114,14 @@ app.get("/upcoming-event-by-email/:email", async (req, res) => {
 });
 // UpcomingEvent-delete-by id
 
-app.delete("/upcoming-event-by-delete/:id", async (req, res) => {
+app.delete("/upcoming-event-by-delete/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
   const query = { _id: new ObjectId(id) };
   const result = await socialEventCollection.deleteOne(query);
   res.send(result);
 });
 // update UpComing Data
-app.patch("/upcoming-update/:id", async (req, res) => {
+app.patch("/upcoming-update/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
   const data = req.body;
   const query = { _id: new ObjectId(id) };
@@ -109,7 +138,7 @@ app.get("/join-events", async (req, res) => {
 });
 
 // post joinEvent
-app.post("/join-event", async (req, res) => {
+app.post("/join-event", verifyToken, async (req, res) => {
   const { data } = req.body;
 
   const alreadyJoined = await socialJoinEventCollection.findOne({
@@ -139,31 +168,32 @@ app.get("/join-event/:email", async (req, res) => {
 });
 
 // my-join-delete-events
-app.delete("/my-join-event/:id", async (req, res) => {
+app.delete("/my-join-event/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
   const query = { _id: new ObjectId(id) };
   const result = await socialJoinEventCollection.deleteOne(query);
   res.send(result);
 });
 
+// get user profile
+app.get("/user/:email", verifyToken, async (req, res) => {
+  const { email } = req.params;
+  const result = await userCollection.findOne({ email });
+  res.send(result);
+});
+
+// update user profile
+app.patch("/update-profile/:email", verifyToken, async (req, res) => {
+  const { email } = req.params;
+  const { name, image } = req.body;
+  const result = await userCollection.updateOne(
+    { email },
+    { $set: { name, image, updatedAt: new Date() } },
+  );
+  res.send(result);
+});
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export default app;
